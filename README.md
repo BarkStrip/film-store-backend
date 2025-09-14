@@ -1,12 +1,15 @@
 # film-store-backend
 # Test innf
-### Activate the Python Virtual Environment
 
-**Windows (Command Prompt):**
-```bash
-source venv/bin/activate
+### Python Virtual Environment
 
+## Activate:
+**bash**
+<pre> ```bash source venv/bin/activate ``` </pre>
 
+## Deactivate:
+**bash**
+<pre> ```bash source venv/bin/activate ``` </pre>
 
 # source venv/bin/activate
 # pip install Flask
