@@ -1,15 +1,19 @@
 # film-store-backend
-# Test innf
 
-### Python Virtual Environment
+## Python Virtual Environment
 
-## Activate:
-**bash**
-<pre> ```bash source venv/bin/activate ``` </pre>
+### Activate:
+``` 
+source venv/bin/activate
+python app.py
+```
 
-## Deactivate:
-**bash**
-<pre> ```bash source venv/bin/activate ``` </pre>
-
-# source venv/bin/activate
-# pip install Flask
+### Deactivate:
+```
+deactivate 
+```
+## Dependencies
+* flask
+* Item 2
+* Item 3
+* Item 4
