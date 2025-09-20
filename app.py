@@ -1,9 +1,11 @@
 from flask import Flask, jsonify
-from flask_cors import CORS
 import mysql.connector
 import os
 from dotenv import load_dotenv
+from flask_cors import CORS
 
+app = Flask(__name__)
+CORS(app)  # all routes, all origins
 load_dotenv(dotenv_path=".env.local")
 
 def get_conn():
@@ -14,8 +16,7 @@ def get_conn():
         database=os.getenv("DB_NAME")
     )
 
-app = Flask(__name__)
-CORS(app)  # this enables CORS for all routes
+
 
 @app.route('/api/hello')
 def hello():
@@ -27,7 +28,7 @@ def top_films():
     conn = get_conn()
     cur = conn.cursor(dictionary=True)
     cur.execute("""
-    select film.title, count(*) as rented
+    select film.film_id, film.title, description, release_year, film.rental_duration, film.rental_rate, film.replacement_cost, film.last_update, length, rating, count(*) as rented
     from film
     join inventory on film.film_id = inventory.film_id
     join rental on inventory.inventory_id = rental.inventory_id
