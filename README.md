@@ -2,12 +2,17 @@
 
 ## Python Virtual Environment
 
-### Activate:
+### Activate using Python:
 ``` 
 source venv/bin/activate
 python app.py
 ```
-
+### Activate using Flask CLI:
+``` 
+source venv/bin/activate
+export FLASK_DEBUG=1 
+flask run --port=3001  
+```
 ### Deactivate:
 ```
 deactivate 
