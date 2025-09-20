@@ -75,34 +75,98 @@ def view_actor_details(actor_id):
     cur.close(); conn.close()
     return jsonify(rows)
 
-@app.route("/api/films", methods=["GET"])
-def films():
+@app.route("/api/films/", defaults={"search": None}, methods=["GET"])
+@app.route("/api/films/<search>", methods=["GET"])
+def films(search):
     conn = get_conn()
     cur = conn.cursor(dictionary=True)
-    cur.execute("""
+
+    base_query = """
     SELECT f.film_id,
-       f.title,
-       f.description,
-       f.release_year,
-       f.rental_duration,
-       f.rental_rate,
-       CAST(f.special_features AS CHAR) AS special_features,
-       f.replacement_cost,
-       f.last_update,
-       f.length,
-       f.rating,
-       c.name AS category, 
-       COUNT(r.rental_id) AS rented
+           f.title,
+           f.description,
+           f.release_year,
+           f.rental_duration,
+           f.rental_rate,
+           CAST(f.special_features AS CHAR) AS special_features,
+           f.replacement_cost,
+           f.last_update,
+           f.length,
+           f.rating,
+           c.name AS category, 
+           COUNT(DISTINCT r.rental_id) AS rented
     FROM film f
     JOIN film_category fc ON f.film_id = fc.film_id
     JOIN category c ON fc.category_id = c.category_id
     JOIN inventory i ON f.film_id = i.film_id
     JOIN rental r ON i.inventory_id = r.inventory_id
-    GROUP BY f.film_id, c.name;
-    """)
+    LEFT JOIN film_actor fa ON f.film_id = fa.film_id
+    LEFT JOIN actor a ON fa.actor_id = a.actor_id
+    """
+
+    params = ()
+    where_clause = ""
+    if search:
+        where_clause = """
+        WHERE f.title LIKE %s
+           OR a.first_name LIKE %s
+           OR a.last_name LIKE %s
+           OR c.name LIKE %s
+        """
+        like_term = f"%{search}%"
+        params = (like_term, like_term, like_term, like_term)
+
+    group_clause = "GROUP BY f.film_id, c.name"
+
+    final_query = base_query + where_clause + group_clause
+
+    cur.execute(final_query, params)
     rows = cur.fetchall()
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
     return jsonify(rows)
+
+@app.route("/api/customers/", defaults={"search": None}, methods=["GET"])
+@app.route("/api/customers/<search>", methods=["GET"])
+def customers(search):
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    base_query = """
+        SELECT
+            C.last_update,
+            C.create_date,
+            C.active,
+            C.address_id,
+            C.email,
+            C.last_name,
+            C.first_name,
+            C.store_id,
+            C.customer_id
+        FROM CUSTOMER C
+    """
+
+    params = ()
+    where_clause = ""
+    if search:
+        where_clause = """
+        WHERE C.customer_id LIKE %s
+           OR C.first_name LIKE %s
+           OR C.last_name LIKE %s
+           OR C.email LIKE %s
+        """
+        like_term = f"%{search}%"
+        params = (like_term, like_term, like_term, like_term)
+
+    final_query = base_query + where_clause
+
+    cur.execute(final_query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(rows)
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001, debug=True)
