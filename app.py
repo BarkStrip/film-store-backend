@@ -26,7 +26,18 @@ def top_films():
     conn = get_conn()
     cur = conn.cursor(dictionary=True)
     cur.execute("""
-        SELECT film.film_id, film.title, description, release_year, film.rental_duration, film.rental_rate, CAST(film.special_features AS CHAR) AS special_features, film.replacement_cost, film.last_update, length, rating, count(*) as rented
+        SELECT  film.film_id, 
+                film.title, 
+                description,
+                release_year, 
+                film.rental_duration, 
+                film.rental_rate, 
+                CAST(film.special_features AS CHAR) AS special_features, 
+                film.replacement_cost, 
+                film.last_update, 
+                length, 
+                rating, 
+                count(*) as rented
         FROM film
         JOIN inventory on film.film_id = inventory.film_id
         JOIN rental on inventory.inventory_id = rental.inventory_id
@@ -83,25 +94,26 @@ def films(search):
 
     base_query = """
     SELECT f.film_id,
-           f.title,
-           f.description,
-           f.release_year,
-           f.rental_duration,
-           f.rental_rate,
-           CAST(f.special_features AS CHAR) AS special_features,
-           f.replacement_cost,
-           f.last_update,
-           f.length,
-           f.rating,
-           c.name AS category, 
-           COUNT(DISTINCT r.rental_id) AS rented
+       f.title,
+       f.description,
+       f.release_year,
+       f.rental_duration,
+       f.rental_rate,
+       CAST(f.special_features AS CHAR) AS special_features,
+       f.replacement_cost,
+       f.last_update,
+       f.length,
+       f.rating,
+       c.name AS category, 
+       COUNT(DISTINCT r.rental_id) AS rented
     FROM film f
     JOIN film_category fc ON f.film_id = fc.film_id
     JOIN category c ON fc.category_id = c.category_id
-    JOIN inventory i ON f.film_id = i.film_id
-    JOIN rental r ON i.inventory_id = r.inventory_id
+    LEFT JOIN inventory i ON f.film_id = i.film_id
+    LEFT JOIN rental r ON i.inventory_id = r.inventory_id
     LEFT JOIN film_actor fa ON f.film_id = fa.film_id
     LEFT JOIN actor a ON fa.actor_id = a.actor_id
+
     """
 
     params = ()
