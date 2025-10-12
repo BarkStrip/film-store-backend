@@ -149,6 +149,48 @@ def films(search):
     conn.close()
     return jsonify(rows)
 
+@app.route("/api/customers", methods=["POST"])
+def create_customer():
+    from flask import request
+    data = request.get_json()
+
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    email = data.get('email')
+    address_id = data.get('address_id', 1)  # Default to 1
+    store_id = data.get('store_id', 1)  # Default to 1
+
+    if not first_name or not last_name or not email:
+        return jsonify({"error": "first_name, last_name, and email are required"}), 400
+
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Insert new customer
+        cur.execute("""
+            INSERT INTO customer (store_id, first_name, last_name, email, address_id, active, create_date)
+            VALUES (%s, %s, %s, %s, %s, 1, NOW());
+        """, (store_id, first_name, last_name, email, address_id))
+
+        conn.commit()
+        customer_id = cur.lastrowid
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "customer_id": customer_id,
+            "message": "Customer created successfully"
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/customers/", defaults={"search": None}, methods=["GET"])
 @app.route("/api/customers/<search>", methods=["GET"])
 def customers(search):
