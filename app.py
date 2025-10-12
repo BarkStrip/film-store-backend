@@ -191,6 +191,53 @@ def create_customer():
         conn.close()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/customers/<customer_id>", methods=["PUT"])
+def update_customer(customer_id):
+    from flask import request
+    data = request.get_json()
+
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    email = data.get('email')
+
+    if not first_name or not last_name or not email:
+        return jsonify({"error": "first_name, last_name, and email are required"}), 400
+
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Check if customer exists
+        cur.execute("SELECT customer_id FROM customer WHERE customer_id = %s", (customer_id,))
+        customer = cur.fetchone()
+
+        if not customer:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Customer not found"}), 404
+
+        # Update customer
+        cur.execute("""
+            UPDATE customer
+            SET first_name = %s, last_name = %s, email = %s, last_update = NOW()
+            WHERE customer_id = %s;
+        """, (first_name, last_name, email, customer_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "message": "Customer updated successfully"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/customers/", defaults={"search": None}, methods=["GET"])
 @app.route("/api/customers/<search>", methods=["GET"])
 def customers(search):
