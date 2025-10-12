@@ -26,23 +26,29 @@ def top_films():
     conn = get_conn()
     cur = conn.cursor(dictionary=True)
     cur.execute("""
-        SELECT  film.film_id, 
-                film.title, 
-                description,
-                release_year, 
-                film.rental_duration, 
-                film.rental_rate, 
-                CAST(film.special_features AS CHAR) AS special_features, 
-                film.replacement_cost, 
-                film.last_update, 
-                length, 
-                rating, 
-                count(*) as rented
-        FROM film
-        JOIN inventory on film.film_id = inventory.film_id
-        JOIN rental on inventory.inventory_id = rental.inventory_id
-        GROUP BY film.film_id
-        ORDER BY count(*) DESC
+        SELECT  f.film_id,
+                f.title,
+                f.description,
+                f.release_year,
+                f.rental_duration,
+                f.rental_rate,
+                CAST(f.special_features AS CHAR) AS special_features,
+                f.replacement_cost,
+                f.last_update,
+                f.length,
+                f.rating,
+                COUNT(DISTINCT r.rental_id) AS rented,
+                COUNT(DISTINCT CASE
+                    WHEN i.inventory_id IS NOT NULL
+                    AND (r2.rental_id IS NULL OR r2.return_date IS NOT NULL)
+                    THEN i.inventory_id
+                END) AS available_inventory
+        FROM film f
+        JOIN inventory i ON f.film_id = i.film_id
+        JOIN rental r ON i.inventory_id = r.inventory_id
+        LEFT JOIN rental r2 ON i.inventory_id = r2.inventory_id AND r2.return_date IS NULL
+        GROUP BY f.film_id
+        ORDER BY COUNT(DISTINCT r.rental_id) DESC
         LIMIT 5;
     """)
     rows = cur.fetchall()
@@ -104,13 +110,18 @@ def films(search):
        f.last_update,
        f.length,
        f.rating,
-       c.name AS category, 
-       COUNT(DISTINCT r.rental_id) AS rented
+       c.name AS category,
+       COUNT(DISTINCT r.rental_id) AS rented,
+       COUNT(DISTINCT CASE
+           WHEN i.inventory_id IS NOT NULL
+           AND (r.rental_id IS NULL OR r.return_date IS NOT NULL)
+           THEN i.inventory_id
+       END) AS available_inventory
     FROM film f
     JOIN film_category fc ON f.film_id = fc.film_id
     JOIN category c ON fc.category_id = c.category_id
     LEFT JOIN inventory i ON f.film_id = i.film_id
-    LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+    LEFT JOIN rental r ON i.inventory_id = r.inventory_id AND r.return_date IS NULL
     LEFT JOIN film_actor fa ON f.film_id = fa.film_id
     LEFT JOIN actor a ON fa.actor_id = a.actor_id
 
