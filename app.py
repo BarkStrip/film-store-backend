@@ -178,6 +178,32 @@ def customers(search):
     conn.close()
     return jsonify(rows)
 
+@app.route("/api/customers/<customer_id>/rentals", methods=["GET"])
+def customer_rentals(customer_id):
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("""
+        SELECT
+            f.title,
+            f.film_id,
+            r.rental_id,
+            r.rental_date,
+            r.return_date,
+            CASE
+                WHEN r.return_date IS NULL THEN 'Currently Rented'
+                ELSE 'Returned'
+            END AS status
+        FROM rental r
+        JOIN inventory i ON r.inventory_id = i.inventory_id
+        JOIN film f ON i.film_id = f.film_id
+        WHERE r.customer_id = %s
+        ORDER BY r.rental_date DESC
+        LIMIT 50;
+    """, (customer_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(rows)
 
 
 if __name__ == '__main__':
