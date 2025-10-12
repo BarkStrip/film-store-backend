@@ -264,6 +264,53 @@ def create_rental():
         conn.close()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/rentals/<rental_id>/return", methods=["PUT"])
+def return_rental(rental_id):
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Check if rental exists and is not already returned
+        cur.execute("""
+            SELECT rental_id, return_date
+            FROM rental
+            WHERE rental_id = %s;
+        """, (rental_id,))
+
+        rental = cur.fetchone()
+
+        if not rental:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Rental not found"}), 404
+
+        if rental['return_date'] is not None:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Rental already returned"}), 400
+
+        # Update return_date to current timestamp
+        cur.execute("""
+            UPDATE rental
+            SET return_date = NOW()
+            WHERE rental_id = %s;
+        """, (rental_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "message": "Rental returned successfully"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001, debug=True)
