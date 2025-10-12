@@ -205,6 +205,65 @@ def customer_rentals(customer_id):
     conn.close()
     return jsonify(rows)
 
+@app.route("/api/rentals", methods=["POST"])
+def create_rental():
+    from flask import request
+    data = request.get_json()
+
+    customer_id = data.get('customer_id')
+    film_id = data.get('film_id')
+
+    if not customer_id or not film_id:
+        return jsonify({"error": "customer_id and film_id are required"}), 400
+
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Find available inventory for this film (not currently rented)
+        cur.execute("""
+            SELECT i.inventory_id
+            FROM inventory i
+            LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+                AND r.return_date IS NULL
+            WHERE i.film_id = %s
+                AND r.rental_id IS NULL
+            LIMIT 1;
+        """, (film_id,))
+
+        inventory = cur.fetchone()
+
+        if not inventory:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "No available inventory for this film"}), 404
+
+        inventory_id = inventory['inventory_id']
+
+        # Create rental record
+        cur.execute("""
+            INSERT INTO rental (rental_date, inventory_id, customer_id, staff_id)
+            VALUES (NOW(), %s, %s, 1);
+        """, (inventory_id, customer_id))
+
+        conn.commit()
+        rental_id = cur.lastrowid
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "rental_id": rental_id,
+            "message": "Rental created successfully"
+        }), 201
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001, debug=True)
