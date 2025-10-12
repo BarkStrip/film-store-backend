@@ -411,6 +411,44 @@ def return_rental(rental_id):
         conn.close()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/customers/<customer_id>", methods=["DELETE"])
+def delete_customer(customer_id):
+    conn = get_conn()
+    cur = conn.cursor(dictionary=True)
+
+    try:
+        # Check if customer exists
+        cur.execute("SELECT customer_id FROM customer WHERE customer_id = %s", (customer_id,))
+        customer = cur.fetchone()
+
+        if not customer:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Customer not found"}), 404
+
+        # Delete associated rentals first to avoid foreign key constraints
+        cur.execute("DELETE FROM rental WHERE customer_id = %s", (customer_id,))
+
+        # Delete the customer
+        cur.execute("DELETE FROM customer WHERE customer_id = %s", (customer_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "message": "Customer and associated rentals deleted successfully"
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=3001, debug=True)
+
