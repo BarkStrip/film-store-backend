@@ -284,19 +284,40 @@ def customer_rentals(customer_id):
     cur = conn.cursor(dictionary=True)
     cur.execute("""
         SELECT
-            f.title,
             f.film_id,
+            f.title,
+            f.description,
+            f.release_year,
+            f.rental_duration,
+            f.rental_rate,
+            CAST(f.special_features AS CHAR) AS special_features,
+            f.replacement_cost,
+            f.length,
+            f.rating,
+            c.name AS category,
             r.rental_id,
             r.rental_date,
             r.return_date,
             CASE
                 WHEN r.return_date IS NULL THEN 'Currently Rented'
                 ELSE 'Returned'
-            END AS status
+            END AS status,
+            COUNT(DISTINCT r2.rental_id) AS rented,
+            COUNT(DISTINCT CASE
+                WHEN i2.inventory_id IS NOT NULL
+                AND (r3.rental_id IS NULL OR r3.return_date IS NOT NULL)
+                THEN i2.inventory_id
+            END) AS available_inventory
         FROM rental r
         JOIN inventory i ON r.inventory_id = i.inventory_id
         JOIN film f ON i.film_id = f.film_id
+        LEFT JOIN film_category fc ON f.film_id = fc.film_id
+        LEFT JOIN category c ON fc.category_id = c.category_id
+        LEFT JOIN inventory i2 ON f.film_id = i2.film_id
+        LEFT JOIN rental r2 ON i2.inventory_id = r2.inventory_id
+        LEFT JOIN rental r3 ON i2.inventory_id = r3.inventory_id AND r3.return_date IS NULL
         WHERE r.customer_id = %s
+        GROUP BY r.rental_id, f.film_id, c.name
         ORDER BY r.rental_date DESC
         LIMIT 50;
     """, (customer_id,))
