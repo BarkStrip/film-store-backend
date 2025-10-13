@@ -17,8 +17,7 @@ flask run --port=3001
 ```
 deactivate 
 ```
-## Dependencies
-* flask
-* Item 2
-* Item 3
-* Item 4
+
+For full-stack development, run both servers concurrently:
+1. Terminal 1: `cd backend && source venv/bin/activate && python app.py`
+2. Terminal 2: `cd frontend && npm start

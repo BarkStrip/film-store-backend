@@ -20,7 +20,6 @@ def get_conn():
 def hello():
     return jsonify(message="Hello From Flask!")
 
-# --- 1) top 5 rented films of all times --- 
 @app.route("/api/top-films", methods=["GET"])
 def top_films():
     conn = get_conn()
@@ -141,6 +140,7 @@ def films(search):
 
     group_clause = "GROUP BY f.film_id, c.name"
 
+    # Combine queries
     final_query = base_query + where_clause + group_clause
 
     cur.execute(final_query, params)
